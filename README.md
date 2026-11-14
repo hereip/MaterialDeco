@@ -111,3 +111,10 @@ MaterialDeco/
 ---
 
 Made with ❤️ by [HereIP](https://github.com/HereIP)
+
+<details>
+<summary>🤫 Секретная пасхалка</summary>
+
+**Боччи зе Стефняфка** 🎸
+
+</details>
