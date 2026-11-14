@@ -8,12 +8,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -30,25 +33,32 @@ class MainActivity : ComponentActivity() {
             var settings by remember { mutableStateOf(loadSettings(this)) }
             var showSettings by remember { mutableStateOf(false) }
 
-            androidx.compose.runtime.LaunchedEffect(settings) {
+            LaunchedEffect(settings) {
                 saveSettings(this@MainActivity, settings)
             }
 
             MaterialDecoTheme(style = settings.style) {
-                Box(
-                    modifier = Modifier.fillMaxSize().pointerInput(showSettings) {
-                        if (!showSettings) detectTapGestures(onDoubleTap = { showSettings = true })
-                    }
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    if (showSettings) {
-                        SettingsScreen(
-                            settings = settings,
-                            onSettingsChange = { settings = it },
-                            onClose = { showSettings = false }
-                        )
-                    } else {
-                        BackgroundShapes(settings)
-                        ClockScreen(settings.style)
+                    Box(
+                        modifier = Modifier.fillMaxSize().pointerInput(showSettings) {
+                            if (!showSettings) {
+                                detectTapGestures(onDoubleTap = { showSettings = true })
+                            }
+                        }
+                    ) {
+                        if (showSettings) {
+                            SettingsScreen(
+                                settings = settings,
+                                onSettingsChange = { settings = it },
+                                onClose = { showSettings = false }
+                            )
+                        } else {
+                            BackgroundShapes(settings)
+                            ClockScreen(settings.style)
+                        }
                     }
                 }
             }
