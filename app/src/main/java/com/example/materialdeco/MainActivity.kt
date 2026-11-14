@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             var settings by remember { mutableStateOf(loadSettings(this)) }
             var showSettings by remember { mutableStateOf(false) }
+            var screensaver by remember { mutableStateOf(false) }
 
             LaunchedEffect(settings) {
                 saveSettings(this@MainActivity, settings)
@@ -43,21 +44,33 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxSize().pointerInput(showSettings) {
-                            if (!showSettings) {
-                                detectTapGestures(onDoubleTap = { showSettings = true })
-                            }
+                        modifier = Modifier.fillMaxSize().pointerInput(showSettings, screensaver) {
+                            detectTapGestures(
+                                onTap = {
+                                    if (screensaver) screensaver = false
+                                },
+                                onDoubleTap = {
+                                    if (!showSettings) {
+                                        screensaver = false
+                                        showSettings = true
+                                    }
+                                }
+                            )
                         }
                     ) {
                         if (showSettings) {
                             SettingsScreen(
                                 settings = settings,
                                 onSettingsChange = { settings = it },
-                                onClose = { showSettings = false }
+                                onClose = { showSettings = false },
+                                onStartScreensaver = {
+                                    showSettings = false
+                                    screensaver = true
+                                }
                             )
                         } else {
                             BackgroundShapes(settings)
-                            ClockScreen(settings.style)
+                            ClockScreen(settings, screensaver)
                         }
                     }
                 }
