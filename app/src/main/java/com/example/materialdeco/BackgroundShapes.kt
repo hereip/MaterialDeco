@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,23 +51,45 @@ fun BackgroundShapes(settings: AppSettings) {
         DecoPalette.FOREST -> listOf(Color(0xFF78B889), Color(0xFF397B61), Color(0xFFB6C978))
         DecoPalette.MONOCHROME -> listOf(Color(0xFF9AA0AA), Color(0xFF69717E), Color(0xFFC5CAD2))
     }
-    val shapes = remember(settings.shape) {
+    val shapes = remember(settings.shape, settings.shapeCount) {
         val options = listOf(CircleShape, RoundedCornerShape(28.dp), CookieShape)
         when (settings.shape) {
-            DecoShape.CIRCLE -> List(3) { CircleShape }
-            DecoShape.SQUIRCLE -> List(3) { RoundedCornerShape(28.dp) }
-            DecoShape.COOKIE -> List(3) { CookieShape }
-            DecoShape.RANDOM -> List(3) { options.random() }
+            DecoShape.CIRCLE -> List(settings.shapeCount) { CircleShape }
+            DecoShape.SQUIRCLE -> List(settings.shapeCount) { RoundedCornerShape(28.dp) }
+            DecoShape.COOKIE -> List(settings.shapeCount) { CookieShape }
+            DecoShape.RANDOM -> List(settings.shapeCount) { options.random() }
         }
     }
     val transition = rememberInfiniteTransition(label = "background_shapes")
-    val drift by transition.animateFloat(-90f, 170f, infiniteRepeatable(tween(16000, easing = LinearEasing), RepeatMode.Reverse), label = "drift")
-    val scale by transition.animateFloat(settings.shapeSize * 0.72f, settings.shapeSize * 1.28f, infiniteRepeatable(tween(11000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "scale")
+    val duration = (16000 / settings.animationSpeed).toInt().coerceAtLeast(1000)
+    val driftAnimation by transition.animateFloat(
+        initialValue = -90f,
+        targetValue = 170f,
+        animationSpec = infiniteRepeatable(tween(duration, easing = LinearEasing), RepeatMode.Reverse),
+        label = "drift"
+    )
+    val scaleAnimation by transition.animateFloat(
+        initialValue = settings.shapeSize * 0.72f,
+        targetValue = settings.shapeSize * 1.28f,
+        animationSpec = infiniteRepeatable(tween((11000 / settings.animationSpeed).toInt().coerceAtLeast(1000), easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "scale"
+    )
+    val drift = if (settings.animationEnabled) driftAnimation else 0f
+    val scale = if (settings.animationEnabled) scaleAnimation else settings.shapeSize
     val alpha = if (settings.style == DecoStyle.LIQUID_GLASS) 0.22f else 0.15f
+    val positions = listOf(Alignment.TopStart, Alignment.CenterEnd, Alignment.BottomStart, Alignment.TopEnd, Alignment.CenterStart, Alignment.BottomEnd)
 
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.offset(x = drift.dp, y = (-drift * 0.45f).dp).size(scale.dp).clip(shapes[0]).background(colors[0].copy(alpha = alpha)))
-        Box(Modifier.align(Alignment.CenterEnd).offset(x = (-drift * 0.55f).dp, y = drift.dp).size((scale * 0.82f).dp).clip(shapes[1]).background(colors[1].copy(alpha = alpha)))
-        Box(Modifier.align(Alignment.BottomStart).offset(x = (drift * 0.4f).dp, y = (-drift * 0.35f).dp).size((scale * 1.12f).dp).clip(shapes[2]).background(colors[2].copy(alpha = alpha)))
+        shapes.forEachIndexed { index, shape ->
+            val direction = if (index % 2 == 0) 1f else -1f
+            val sizeFactor = 0.72f + (index % 3) * 0.18f
+            Box(
+                Modifier.align(positions[index % positions.size])
+                    .offset(x = (drift * direction * (0.35f + index * 0.08f)).dp, y = (-drift * direction * 0.45f).dp)
+                    .size((scale * sizeFactor).dp)
+                    .clip(shape)
+                    .background(colors[index % colors.size].copy(alpha = alpha))
+            )
+        }
     }
 }
