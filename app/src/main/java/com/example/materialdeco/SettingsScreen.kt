@@ -40,39 +40,29 @@ fun SettingsScreen(
 
         Text("Стиль оформления", style = MaterialTheme.typography.titleMedium)
         DecoStyle.values().forEach { option ->
-            SelectableOption(option.title, settings.style == option) {
-                onSettingsChange(settings.copy(style = option))
-            }
+            SelectableOption(option.title, settings.style == option) { onSettingsChange(settings.copy(style = option)) }
         }
 
         Text("Фигуры", style = MaterialTheme.typography.titleMedium)
         DecoShape.values().forEach { option ->
-            SelectableOption(option.title, settings.shape == option) {
-                onSettingsChange(settings.copy(shape = option))
-            }
+            SelectableOption(option.title, settings.shape == option) { onSettingsChange(settings.copy(shape = option)) }
         }
 
         Text("Цветовая палитра", style = MaterialTheme.typography.titleMedium)
         DecoPalette.values().forEach { option ->
-            SelectableOption(option.title, settings.palette == option) {
-                onSettingsChange(settings.copy(palette = option))
-            }
+            SelectableOption(option.title, settings.palette == option) { onSettingsChange(settings.copy(palette = option)) }
         }
 
         Text("Шрифт часов", style = MaterialTheme.typography.titleMedium)
         ClockFont.values().forEach { option ->
-            SelectableOption(option.title, settings.clockFont == option) {
-                onSettingsChange(settings.copy(clockFont = option))
-            }
+            SelectableOption(option.title, settings.clockFont == option) { onSettingsChange(settings.copy(clockFont = option)) }
         }
 
         HorizontalDivider()
         Text("Анимации", style = MaterialTheme.typography.titleMedium)
-        SettingSwitch(
-            title = "Включить анимации",
-            checked = settings.animationEnabled,
-            onCheckedChange = { onSettingsChange(settings.copy(animationEnabled = it)) }
-        )
+        SettingSwitch("Включить анимации", settings.animationEnabled) {
+            onSettingsChange(settings.copy(animationEnabled = it))
+        }
         Text("Скорость: ${String.format("%.2f", settings.animationSpeed)}×")
         Slider(
             value = settings.animationSpeed,
@@ -95,21 +85,17 @@ fun SettingsScreen(
 
         HorizontalDivider()
         Text("Музыка", style = MaterialTheme.typography.titleMedium)
-        SettingSwitch(
-            title = "Music Visualizer",
-            checked = settings.visualizerEnabled,
-            onCheckedChange = { enabled ->
-                if (!enabled) {
-                    onSettingsChange(settings.copy(visualizerEnabled = false))
-                } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    onSettingsChange(settings.copy(visualizerEnabled = true))
-                } else {
-                    audioPermission.launch(Manifest.permission.RECORD_AUDIO)
-                }
+        SettingSwitch("Music Visualizer", settings.visualizerEnabled) { enabled ->
+            if (!enabled) {
+                onSettingsChange(settings.copy(visualizerEnabled = false))
+            } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                onSettingsChange(settings.copy(visualizerEnabled = true))
+            } else {
+                audioPermission.launch(Manifest.permission.RECORD_AUDIO)
             }
-        )
+        }
         Text(
-            "Для анализа звука Android запросит разрешение на доступ к микрофону. Приложение использует системный Audio Visualizer.",
+            "Для анализа звука Android запросит разрешение RECORD_AUDIO. Используется системный Audio Visualizer, а не запись микрофона.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -133,9 +119,7 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) { Text("Сохранить текущий пресет") }
 
-        if (presets.isEmpty()) {
-            Text("Пока нет сохранённых пресетов.", style = MaterialTheme.typography.bodySmall)
-        }
+        if (presets.isEmpty()) Text("Пока нет сохранённых пресетов.", style = MaterialTheme.typography.bodySmall)
         presets.forEach { preset ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -158,25 +142,21 @@ fun SettingsScreen(
         }
         OutlinedButton(
             onClick = {
-                val randomSettings = settings.copy(
+                onSettingsChange(settings.copy(
                     style = DecoStyle.values().random(),
-                    shape = DecoShape.values().filterNot { it == DecoShape.RANDOM }.random(),
+                    shape = DecoShape.values().random(),
                     palette = DecoPalette.values().random(),
                     shapeSize = Random.nextInt(130, 341).toFloat(),
                     clockFont = ClockFont.values().random(),
                     animationEnabled = Random.nextBoolean(),
                     animationSpeed = Random.nextInt(25, 251) / 100f,
                     shapeCount = Random.nextInt(1, 7)
-                )
-                onSettingsChange(randomSettings)
+                ))
             },
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("🎲 Randomize")
-        }
-        Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
-            Text("Готово")
-        }
+        ) { Text("🎲 Randomize") }
+
+        Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) { Text("Готово") }
         Spacer(Modifier.height(16.dp))
     }
 }
