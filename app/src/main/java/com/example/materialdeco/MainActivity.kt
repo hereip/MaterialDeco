@@ -12,6 +12,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -20,9 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.LayoutDirection
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -34,8 +40,9 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,12 +58,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Оборачиваем всё в Box, чтобы пузыри были на фоне
                     Box(modifier = Modifier.fillMaxSize()) {
-                        // 1. Фон с пузырями
                         MaterialBubbles()
-
-                        // 2. Часы поверх пузырей
                         ClockScreen()
                     }
                 }
@@ -77,18 +80,51 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// 🫧 Компонент с пузырями
+// Фигурный контур печеньки в стиле Material 3.
+private object CookieShape : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: androidx.compose.ui.unit.Density
+    ): Outline {
+        val path = Path()
+        val centerX = size.width / 2f
+        val centerY = size.height / 2f
+        val baseRadius = minOf(size.width, size.height) / 2f
+        val bumps = 12
+        val steps = 240
+
+        for (step in 0..steps) {
+            val angle = step.toFloat() / steps * (2f * PI.toFloat())
+            val radius = baseRadius * (0.88f + 0.12f * cos(bumps * angle))
+            val x = centerX + radius * cos(angle)
+            val y = centerY + radius * sin(angle)
+            if (step == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        return Outline.Generic(path)
+    }
+}
+
+// Три фигуры каждый запуск выбираются случайно: круг, скруглённый квадрат или печенька.
 @Composable
 fun MaterialBubbles() {
-    // Берем красивые цвета из темы Material 3
     val colorPrimary = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
     val colorSecondary = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
     val colorTertiary = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
 
-    // Бесконечная плавная анимация (туда-сюда)
-    val infiniteTransition = rememberInfiniteTransition(label = "bubble_animation")
+    val shapes = remember {
+        List(3) {
+            listOf(
+                CircleShape,
+                RoundedCornerShape(28.dp),
+                CookieShape
+            ).random()
+        }
+    }
 
-    // Анимация для смещения по X и Y (медленно и плавно)
+    val infiniteTransition = rememberInfiniteTransition(label = "shape_animation")
+
     val offsetX by infiniteTransition.animateFloat(
         initialValue = -100f,
         targetValue = 200f,
@@ -107,7 +143,6 @@ fun MaterialBubbles() {
         ), label = "offsetY"
     )
 
-    // Анимация размера (дышащие пузыри)
     val sizeScale by infiniteTransition.animateFloat(
         initialValue = 150f,
         targetValue = 300f,
@@ -117,34 +152,30 @@ fun MaterialBubbles() {
         ), label = "sizeScale"
     )
 
-    // Рисуем три пузыря в разных местах
     Box(modifier = Modifier.fillMaxSize()) {
-        // Пузырь 1 (сверху слева)
         Box(
             modifier = Modifier
-                .offset(x = (offsetX).dp, y = (offsetY).dp)
+                .offset(x = offsetX.dp, y = offsetY.dp)
                 .size(sizeScale.dp)
-                .clip(CircleShape)
+                .clip(shapes[0])
                 .background(colorPrimary)
         )
 
-        // Пузырь 2 (справа)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .offset(x = (offsetY).dp, y = (offsetX).dp)
+                .offset(x = offsetY.dp, y = offsetX.dp)
                 .size((sizeScale * 0.8f).dp)
-                .clip(CircleShape)
+                .clip(shapes[1])
                 .background(colorSecondary)
         )
 
-        // Пузырь 3 (снизу)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .offset(x = (offsetX / 2).dp, y = (offsetY / 2).dp)
                 .size((sizeScale * 1.2f).dp)
-                .clip(CircleShape)
+                .clip(shapes[2])
                 .background(colorTertiary)
         )
     }
@@ -167,7 +198,6 @@ fun ClockScreen() {
         }
     }
 
-    // Занимаем весь экран, чтобы часы были по центру
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -177,7 +207,6 @@ fun ClockScreen() {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
-
         ) {
             Text(
                 text = currentTime,
@@ -201,7 +230,6 @@ fun BatteryLevelText() {
     val context = LocalContext.current
     var batteryPercent by remember { mutableStateOf(0) }
 
-    // Слушаем изменения батареи
     DisposableEffect(Unit) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context?, intent: Intent?) {
