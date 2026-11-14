@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import kotlin.math.abs
 
 @Composable
 fun MusicVisualizer(enabled: Boolean, modifier: Modifier = Modifier) {
@@ -49,7 +50,8 @@ fun MusicVisualizer(enabled: Boolean, modifier: Modifier = Modifier) {
                                 samplingRate: Int
                             ) {
                                 waveform = bytes.filterIndexed { index, _ -> index % 4 == 0 }
-                                    .take(32).map { kotlin.math.abs(it.toInt() - 128) }
+                                    .take(32)
+                                    .map { abs((it.toInt() and 0xFF) - 128) }
                             }
 
                             override fun onFftDataCapture(
