@@ -4,15 +4,20 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlin.random.Random
 
@@ -38,24 +43,35 @@ fun SettingsScreen(
     ) {
         Text("Настройки", style = MaterialTheme.typography.headlineMedium)
 
+        Text("Предпросмотр", style = MaterialTheme.typography.titleMedium)
+        SettingsPreview(settings)
+
         Text("Стиль оформления", style = MaterialTheme.typography.titleMedium)
         DecoStyle.values().forEach { option ->
-            SelectableOption(option.title, settings.style == option) { onSettingsChange(settings.copy(style = option)) }
+            SelectableOption(option.title, settings.style == option) {
+                onSettingsChange(settings.copy(style = option))
+            }
         }
 
         Text("Фигуры", style = MaterialTheme.typography.titleMedium)
         DecoShape.values().forEach { option ->
-            SelectableOption(option.title, settings.shape == option) { onSettingsChange(settings.copy(shape = option)) }
+            SelectableOption(option.title, settings.shape == option) {
+                onSettingsChange(settings.copy(shape = option))
+            }
         }
 
         Text("Цветовая палитра", style = MaterialTheme.typography.titleMedium)
         DecoPalette.values().forEach { option ->
-            SelectableOption(option.title, settings.palette == option) { onSettingsChange(settings.copy(palette = option)) }
+            SelectableOption(option.title, settings.palette == option) {
+                onSettingsChange(settings.copy(palette = option))
+            }
         }
 
         Text("Шрифт часов", style = MaterialTheme.typography.titleMedium)
         ClockFont.values().forEach { option ->
-            SelectableOption(option.title, settings.clockFont == option) { onSettingsChange(settings.copy(clockFont = option)) }
+            SelectableOption(option.title, settings.clockFont == option) {
+                onSettingsChange(settings.copy(clockFont = option))
+            }
         }
 
         HorizontalDivider()
@@ -158,6 +174,52 @@ fun SettingsScreen(
 
         Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) { Text("Готово") }
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun SettingsPreview(settings: AppSettings) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            BackgroundShapes(settings)
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val font = when (settings.clockFont) {
+                    ClockFont.SYSTEM -> androidx.compose.ui.text.font.FontFamily.Default
+                    ClockFont.MONOSPACE -> androidx.compose.ui.text.font.FontFamily.Monospace
+                    ClockFont.SERIF -> androidx.compose.ui.text.font.FontFamily.Serif
+                    ClockFont.CURSIVE -> androidx.compose.ui.text.font.FontFamily.Cursive
+                }
+                Text(
+                    text = "12:34",
+                    fontSize = 46.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = if (settings.style == DecoStyle.LINUX_TTY) {
+                        androidx.compose.ui.text.font.FontFamily.Monospace
+                    } else font,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "понедельник, 16 ноября",
+                    fontSize = 12.sp,
+                    fontFamily = font,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = if (settings.style == DecoStyle.LINUX_TTY) "[BATTERY: 85%]" else "85%",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
